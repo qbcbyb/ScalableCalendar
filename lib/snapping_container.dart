@@ -24,7 +24,7 @@ class SnappingContainer extends StatefulWidget {
         assert(maxExtent > minExtent),
         assert(resizingView != null),
         assert(bottomView != null),
-        _minFlingVelocity = minFlingVelocity ?? 300,
+        _minFlingVelocity = minFlingVelocity ?? 100,
         initialMaxExtent = initialMaxExtent ?? true,
         super(key: key);
   @override
@@ -109,7 +109,8 @@ class _SnappingContainerState extends State<SnappingContainer> with SingleTicker
   }
 
   void updateExtent(double newExtent) {
-    if (newExtent != nowExtent && newExtent >= widget.minExtent && newExtent <= widget.maxExtent) {
+    if (newExtent != nowExtent) {
+      newExtent = newExtent.clamp(widget.minExtent, widget.maxExtent);
       ScrollUpdateNotification(
         metrics: SnappingScrollPosition(newExtent > nowExtent ? AxisDirection.down : AxisDirection.up, widget.maxExtent,
             widget.minExtent, newExtent, _viewportDimension),
@@ -151,10 +152,10 @@ class _SnappingContainerState extends State<SnappingContainer> with SingleTicker
 
   void animateTo(double velocity, double end) {
     var simulation = ScrollSpringSimulation(
-      SpringDescription(
-        mass: 2,
-        stiffness: 200.0,
-        damping: 18,
+      SpringDescription.withDampingRatio(
+        mass: 0.5,
+        stiffness: 100.0,
+        ratio: 1.1,
       ),
       nowExtent,
       end,

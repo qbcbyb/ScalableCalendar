@@ -1,7 +1,6 @@
 import 'package:date_utils/date_utils.dart';
 import 'package:flutter/material.dart';
 
-typedef Widget _SingleBuilder<T>(BuildContext context, T date);
 typedef Widget DateBuilder(
     BuildContext context,
     DateTime date,
@@ -11,6 +10,12 @@ typedef Widget DateBuilder(
     Widget Function(BuildContext context, DateTime date, bool isSelected, bool isToday, bool dayOfThisMonth)
         defaultBuilder);
 typedef void DateSelected(DateTime date);
+
+String _customLayoutId(int index) {
+  return "_customLayoutId$index";
+}
+
+const ROW_COUNT_IN_VIEW = 7;
 
 class CalendarView extends StatelessWidget {
   final DateTime initialSelectedDate;
@@ -42,22 +47,27 @@ class CalendarView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(builder: (context, constraints) {
-      int selectedWeekIndex = (_firstDayOfWeek.difference(_firstDayOfMonthView).inDays / 7).round();
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        mainAxisSize: MainAxisSize.max,
-        children: List<Widget>.generate(7, (i) {
-          if (i == 0) {
-            return _DateOrDayRow<String>(
-              height: minRowHeight,
-              dateList: _weekdays,
-              dateBuilder: _buildWeekday,
-            );
-          }
-          return buildWeekByIndex(i - 1, selectedWeekIndex, constraints.maxHeight - minRowHeight);
-        }),
+    int selectedWeekIndex = (_firstDayOfWeek.difference(_firstDayOfMonthView).inDays / 7).round();
+    return CustomMultiChildLayout(
+      delegate: MultiCalendarTileLayoutDelegate(
+        minRowHeight: minRowHeight,
+        selectedWeekIndex: selectedWeekIndex,
+      ),
+      children: buildWidgets(context),
+    );
+  }
+
+  List<Widget> buildWidgets(BuildContext context) {
+    return List<Widget>.generate(ROW_COUNT_IN_VIEW * 7, (i) {
+      if (i < 7) {
+        return LayoutId(
+          id: _customLayoutId(i),
+          child: _buildWeekday(context, _weekdays[i]),
+        );
+      }
+      return LayoutId(
+        id: _customLayoutId(i),
+        child: _parseAndBuildDate(context, _firstDayOfMonthView.add(Duration(days: i - 7))),
       );
     });
   }
@@ -65,33 +75,6 @@ class CalendarView extends StatelessWidget {
   Widget _buildWeekday(BuildContext context, String weekday) => Center(
         child: Text(weekday),
       );
-
-  Widget buildWeekByIndex(int weekIndex, int selectedWeekIndex, double maxHeight) {
-    final dateList = List<DateTime>.generate(7, (j) => _firstDayOfMonthView.add(Duration(days: j + (weekIndex) * 7)));
-    final hasDateSelected = dateList[0] == _firstDayOfWeek;
-
-    double minHeight = minRowHeight;
-
-    int realIndexExcludeSelectedInLayout = weekIndex;
-    if (!hasDateSelected) {
-      if (realIndexExcludeSelectedInLayout < selectedWeekIndex) {
-        realIndexExcludeSelectedInLayout++;
-      }
-      double top = minHeight * realIndexExcludeSelectedInLayout;
-      double leftHeight = maxHeight - top;
-      if (leftHeight < 0) {
-        return Container();
-      } else if (leftHeight < minHeight) {
-        minHeight = leftHeight;
-      }
-    }
-    return _DateOrDayRow<DateTime>(
-      height: minHeight,
-      dateList: dateList,
-      dateBuilder: _parseAndBuildDate,
-    );
-  }
-
   Widget _parseAndBuildDate(BuildContext context, DateTime date) {
     bool isToday = Utils.isSameDay(date, today);
     bool isSelected = Utils.isSameDay(date, initialSelectedDate);
@@ -136,34 +119,55 @@ class CalendarView extends StatelessWidget {
   }
 }
 
-class _DateOrDayRow<T> extends StatelessWidget {
-  final double height;
-  final List<T> dateList;
-  final _SingleBuilder<T> dateBuilder;
+class MultiCalendarTileLayoutDelegate extends MultiChildLayoutDelegate {
+  final double minRowHeight;
+  final int selectedWeekIndex;
 
-  _DateOrDayRow({
-    Key key,
-    @required this.height,
-    @required this.dateList,
-    @required this.dateBuilder,
-  })  : assert(height != null),
-        assert(dateList != null),
-        assert(dateBuilder != null),
-        super(key: key);
+  MultiCalendarTileLayoutDelegate({this.minRowHeight, this.selectedWeekIndex});
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: height,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: dateList
-            .map(
-              (date) => Expanded(
-                child: dateBuilder(context, date),
-              ),
-            )
-            .toList(),
-      ),
-    );
+  void performLayout(Size size) {
+    final double width = size.width, height = size.height;
+    final double tileWidth = width / 7, tileHeight = height / 7;
+    final hasEnoughHeight = tileHeight > minRowHeight;
+    final maxDateTilesHeight = height - (hasEnoughHeight ? tileHeight : minRowHeight);
+    double lastBottom = 0;
+    for (var i = 0; i < ROW_COUNT_IN_VIEW; i++) {
+      double minHeight = hasEnoughHeight ? tileHeight : minRowHeight;
+      if (!hasEnoughHeight && i != 0) {
+        int weekIndex = i - 1;
+
+        if (weekIndex != selectedWeekIndex) {
+          int realIndexExcludeSelectedInLayout = weekIndex;
+          if (realIndexExcludeSelectedInLayout < selectedWeekIndex) {
+            realIndexExcludeSelectedInLayout++;
+          }
+          double top = minHeight * realIndexExcludeSelectedInLayout;
+          double leftHeight = maxDateTilesHeight - top;
+          if (leftHeight < minHeight) {
+            minHeight = leftHeight;
+          }
+        }
+      }
+      final hasHeight = minHeight > 0;
+      for (var j = 0; j < 7; j++) {
+        int widgetIndex = (i * 7 + j);
+        var layoutId = _customLayoutId(widgetIndex);
+        if (hasHeight) {
+          layoutChild(layoutId, BoxConstraints.loose(Size(tileWidth, minHeight)));
+          positionChild(layoutId, Offset(j * tileWidth, lastBottom));
+        } else {
+          layoutChild(layoutId, BoxConstraints.loose(Size.zero));
+          positionChild(layoutId, Offset.infinite);
+        }
+      }
+      if (hasHeight) {
+        lastBottom += minHeight;
+      }
+    }
+  }
+
+  @override
+  bool shouldRelayout(MultiCalendarTileLayoutDelegate oldDelegate) {
+    return minRowHeight != oldDelegate.minRowHeight || selectedWeekIndex != oldDelegate.selectedWeekIndex;
   }
 }

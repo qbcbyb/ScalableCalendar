@@ -68,26 +68,26 @@ class _SwipebleCalendarState extends State<SwipebleCalendar> {
 
   @override
   Widget build(BuildContext context) {
-    // return NotificationListener<ScrollNotification>(
-    //   onNotification: (notification) {
-    //     if (notification is ScrollEndNotification) {
-    //       int pageIndex = _pageController.page.round();
-    //       if (pageIndex != selectedDateAndPageIndex.page) {
-    //         selectedDateAndPageIndex = _BaseSelectedDateAndPageIndex(pageIndex, buildLayoutDate(pageIndex));
-    //       }
-    //     }
-    //     return false;
-    //   },
-    //   child: PageView.builder(
-    //     controller: _pageController,
-    //     physics: isVerticalScrolling ? NeverScrollableScrollPhysics() : null,
-    //     itemCount: START_PAGE * 2,
-    //     itemBuilder: (context, index) {
-    return buildNotificationListener(buildLayoutDate(START_PAGE));
-    //   return buildNotificationListener(buildLayoutDate(index));
-    //     },
-    //   ),
-    // );
+    return NotificationListener<ScrollNotification>(
+      onNotification: (notification) {
+        if (notification is ScrollEndNotification) {
+          int pageIndex = _pageController.page.round();
+          if (pageIndex != selectedDateAndPageIndex.page) {
+            selectedDateAndPageIndex = _BaseSelectedDateAndPageIndex(pageIndex, buildLayoutDate(pageIndex));
+          }
+        }
+        return false;
+      },
+      child: PageView.builder(
+        controller: _pageController,
+        physics: isVerticalScrolling ? NeverScrollableScrollPhysics() : null,
+        itemCount: START_PAGE * 2,
+        itemBuilder: (context, index) {
+          // return buildNotificationListener(buildLayoutDate(START_PAGE));
+          return buildNotificationListener(buildLayoutDate(index));
+        },
+      ),
+    );
   }
 
   NotificationListener<ScrollNotification> buildNotificationListener(DateTime nowSelectedDate) {
