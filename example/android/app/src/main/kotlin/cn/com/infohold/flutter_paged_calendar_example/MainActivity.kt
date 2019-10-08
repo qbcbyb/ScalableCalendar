@@ -1,4 +1,4 @@
-package cn.com.infohold.flutter_swipeble_calendar_example
+package cn.com.infohold.flutter_paged_calendar_example
 
 import android.os.Bundle
 

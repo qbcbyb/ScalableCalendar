@@ -1,4 +1,4 @@
-# flutter_swipeble_calendar
+# flutter_paged_calendar
 
 A new flutter plugin project.
 

@@ -76,7 +76,9 @@ class _SnappingContainerState extends State<SnappingContainer> with SingleTicker
                 height: nowExtent,
                 child: widget.resizingView,
               ),
-              widget.bottomView,
+              Expanded(
+                child: widget.bottomView,
+              ),
             ],
           ),
         );
