@@ -1,6 +1,6 @@
-# flutter_swipeble_calendar_example
+# flutter_paged_calendar_example
 
-Demonstrates how to use the flutter_swipeble_calendar plugin.
+Demonstrates how to use the flutter_paged_calendar plugin.
 
 ## Getting Started
 

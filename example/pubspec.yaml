@@ -1,5 +1,5 @@
-name: flutter_swipeble_calendar_example
-description: Demonstrates how to use the flutter_swipeble_calendar plugin.
+name: flutter_paged_calendar_example
+description: Demonstrates how to use the flutter_paged_calendar plugin.
 publish_to: 'none'
 
 environment:
@@ -17,7 +17,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
 
-  flutter_swipeble_calendar:
+  flutter_paged_calendar:
     path: ../
 
 # For information on the generic Dart part of this file, see the

@@ -1,9 +1,8 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_swipeble_calendar/flutter_swipeble_calendar.dart';
 
 void main() {
-  const MethodChannel channel = MethodChannel('flutter_swipeble_calendar');
+  const MethodChannel channel = MethodChannel('flutter_paged_calendar');
 
   setUp(() {
     channel.setMockMethodCallHandler((MethodCall methodCall) async {
@@ -15,7 +14,7 @@ void main() {
     channel.setMockMethodCallHandler(null);
   });
 
-  test('getPlatformVersion', () async {
-    expect(await SwipebleCalendar.platformVersion, '42');
-  });
+//   test('getPlatformVersion', () async {
+//     expect(await pagedCalendar.platformVersion, '42');
+//   });
 }
