@@ -12,6 +12,13 @@ class MyApp extends StatefulWidget {
   _MyAppState createState() => _MyAppState();
 }
 
+class DateTimeEvent {
+  final String title;
+  final String description;
+
+  DateTimeEvent(this.title, this.description);
+}
+
 class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
@@ -20,23 +27,32 @@ class _MyAppState extends State<MyApp> {
         appBar: AppBar(
           title: const Text('Plugin example app'),
         ),
-        body: SwipebleCalendar(
+        body: SwipebleCalendar<DateTimeEvent>(
           weekDayFromIndex: (i) => const <String>["日", "一", "二", "三", "四", "五", "六"][i],
-          eventListView: ListView.builder(
-            itemCount: 5,
-            itemBuilder: (BuildContext context, int index) {
-              return Container(
-                height: 40,
-                child: Row(
-                  children: <Widget>[
-                    Icon(Icons.access_alarm),
-                    Expanded(
-                      child: Text("测试日历项$index"),
-                    ),
-                  ],
-                ),
-              );
-            },
+          eventBuilder: (date) => isSameDay(date, DateTime.now())
+              ? <DateTimeEvent>[
+                  DateTimeEvent("测试", "测试"),
+                  DateTimeEvent("测试", "测试"),
+                  DateTimeEvent("测试", "测试"),
+                ]
+              : null,
+          eventWidgetBuilder: (context, eventData) => ListTile(
+            trailing: Icon(Icons.access_alarm),
+            title: Text(eventData.title), subtitle: Text(eventData.description),
+            // child: Container(
+            //   height: 80,
+            //   child: Row(
+            //     children: <Widget>[
+            //       ,
+            //       Expanded(
+            //         child: Column(
+            //           children: <Widget>[
+            //           ],
+            //         ),
+            //       ),
+            //     ],
+            //   ),
+            // ),
           ),
         ),
       ),

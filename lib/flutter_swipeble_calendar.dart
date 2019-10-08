@@ -2,9 +2,14 @@ import 'dart:math' as math;
 import 'package:date_utils/date_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_swipeble_calendar/calendar_view.dart';
-import 'package:flutter_swipeble_calendar/snapping_container.dart';
 
 const START_PAGE = 10000;
+
+typedef List<T> EventBuilder<T>(DateTime selectedDate);
+typedef Widget EventWidgetBuilder<T>(BuildContext context, T eventData);
+
+const isSameDay = Utils.isSameDay;
+const isSameWeek = Utils.isSameWeek;
 
 class _BaseSelectedDateAndPageIndex {
   final int page;
@@ -18,31 +23,32 @@ class _BaseSelectedDateAndPageIndex {
   }
 }
 
-class SwipebleCalendar extends StatefulWidget {
+class SwipebleCalendar<T> extends StatefulWidget {
   final DateTime initialSelectedDate;
   final double minRowHeight;
 
   final WeekDayFromIndex weekDayFromIndex;
   final DateBuilder dateBuilder;
 
-  final Widget eventListView;
+  final EventBuilder<T> eventBuilder;
+  final EventWidgetBuilder<T> eventWidgetBuilder;
 
   SwipebleCalendar({
     Key key,
-    @required Widget eventListView,
     DateTime initialSelectedDate,
     this.minRowHeight = 40.0,
     this.weekDayFromIndex,
     this.dateBuilder,
+    this.eventBuilder,
+    this.eventWidgetBuilder,
   })  : this.initialSelectedDate = (initialSelectedDate ?? DateTime.now()),
-        eventListView = eventListView ?? Container(),
         super(key: key);
 
   @override
-  _SwipebleCalendarState createState() => _SwipebleCalendarState();
+  _SwipebleCalendarState<T> createState() => _SwipebleCalendarState<T>();
 }
 
-class _SwipebleCalendarState extends State<SwipebleCalendar> {
+class _SwipebleCalendarState<T> extends State<SwipebleCalendar<T>> {
   PageController _pageController = PageController(initialPage: START_PAGE, keepPage: false);
 
   bool isInMonthView = true;
@@ -114,9 +120,7 @@ class _SwipebleCalendarState extends State<SwipebleCalendar> {
           });
         } else if (notification is ScrollEndNotification) {
           setState(() {
-            print(
-                "${notification.metrics.minScrollExtent} notification.metrics.pixels: ${notification.metrics.pixels}, notification.metrics.maxScrollExtent: ${notification.metrics.maxScrollExtent}");
-            isInMonthView = notification.metrics.pixels == notification.metrics.maxScrollExtent;
+            isInMonthView = notification.metrics.pixels == 0;
             this.isVerticalScrolling = false;
           });
         }
@@ -127,18 +131,21 @@ class _SwipebleCalendarState extends State<SwipebleCalendar> {
   }
 
   Widget buildSnappingContainer(DateTime nowSelectedDate) {
+    final headerMaxScrollOffset = widget.minRowHeight * 5;
+    final List<T> events = (widget.eventBuilder == null ? [] : widget.eventBuilder(nowSelectedDate)) ?? [];
     return NestedScrollView(
-      physics: SnappingScrollPhysics(maxScrollOffset: () => 200),
+      controller: ScrollController(initialScrollOffset: isInMonthView ? 0 : headerMaxScrollOffset),
+      physics: _SnappingScrollPhysics(maxScrollOffset: () => headerMaxScrollOffset),
       headerSliverBuilder: (context, innerBoxIsScrolled) => <Widget>[
         SliverOverlapAbsorber(
           handle: NestedScrollView.sliverOverlapAbsorberHandleFor(context),
           child: SliverPersistentHeader(
             pinned: true,
-            // floating: true,
             delegate: _CalendarViewDelegate(
-              minHeight: 80,
-              maxHeight: 280,
+              minHeight: widget.minRowHeight * 2,
+              maxHeight: widget.minRowHeight * 7,
               childBuilder: (context) => Container(
+                color: Colors.white,
                 child: CalendarView(
                   initialSelectedDate: nowSelectedDate,
                   minRowHeight: widget.minRowHeight,
@@ -176,63 +183,20 @@ class _SwipebleCalendarState extends State<SwipebleCalendar> {
             SliverOverlapInjector(
               handle: NestedScrollView.sliverOverlapAbsorberHandleFor(context),
             ),
-            SliverFixedExtentList(
-              itemExtent: 40,
+            SliverList(
               delegate: SliverChildBuilderDelegate(
                 (BuildContext context, int index) {
-                  return Container(
-                    child: Row(
-                      children: <Widget>[
-                        Icon(Icons.access_alarm),
-                        Expanded(
-                          child: Text("测试日历项$index"),
-                        ),
-                      ],
-                    ),
-                  );
+                  return widget.eventWidgetBuilder == null
+                      ? Placeholder()
+                      : widget.eventWidgetBuilder(context, events[index]);
                 },
-                childCount: 13,
+                childCount: events.length,
               ),
             ),
           ],
         );
       }),
     );
-    // return SnappingContainer(
-    //   minExtent: 80,
-    //   maxExtent: 280,
-    //   initialMaxExtent: isInMonthView,
-    //   resizingView: CalendarView(
-    //     initialSelectedDate: nowSelectedDate,
-    //     minRowHeight: widget.minRowHeight,
-    //     weekDayFromIndex: widget.weekDayFromIndex,
-    //     dateBuilder: widget.dateBuilder,
-    //     dateSelected: (date) {
-    //       int pageIndex = selectedDateAndPageIndex.page, pageDiff = 0;
-    //       final nowSelectedDate = selectedDateAndPageIndex.date;
-    //       if (Utils.isSameDay(nowSelectedDate, date)) {
-    //         return;
-    //       }
-    //       if (isInMonthView && (nowSelectedDate.year != date.year || nowSelectedDate.month != date.month)) {
-    //         pageDiff = (date.year - nowSelectedDate.year) * 12 + (date.month - nowSelectedDate.month);
-    //       }
-    //       if (pageDiff == 0) {
-    //         selectedDateAndPageIndex = _BaseSelectedDateAndPageIndex(pageIndex, date);
-    //       } else {
-    //         pageIndex += pageDiff;
-    //         _pageController
-    //             .animateToPage(pageIndex, curve: Curves.easeInOut, duration: Duration(milliseconds: 300))
-    //             .then((_) {
-    //           selectedDateAndPageIndex = _BaseSelectedDateAndPageIndex(pageIndex, date);
-    //         });
-    //       }
-    //     },
-    //   ),
-    //   bottomView: IgnorePointer(
-    //     ignoring: isInMonthView,
-    //     child: widget.eventListView,
-    //   ),
-    // );
   }
 }
 
@@ -270,8 +234,8 @@ class _CalendarViewDelegate extends SliverPersistentHeaderDelegate {
   String toString() => '_SliverMainContentDelegate';
 }
 
-class SnappingScrollPhysics extends ClampingScrollPhysics {
-  SnappingScrollPhysics({
+class _SnappingScrollPhysics extends ClampingScrollPhysics {
+  _SnappingScrollPhysics({
     ScrollPhysics parent,
     @required this.maxScrollOffset,
   })  : assert(maxScrollOffset != null),
@@ -280,8 +244,8 @@ class SnappingScrollPhysics extends ClampingScrollPhysics {
   final double Function() maxScrollOffset;
 
   @override
-  SnappingScrollPhysics applyTo(ScrollPhysics ancestor) {
-    return SnappingScrollPhysics(parent: buildParent(ancestor), maxScrollOffset: maxScrollOffset);
+  _SnappingScrollPhysics applyTo(ScrollPhysics ancestor) {
+    return _SnappingScrollPhysics(parent: buildParent(ancestor), maxScrollOffset: maxScrollOffset);
   }
 
   Simulation _toMaxScrollOffsetSimulation(double offset, double dragVelocity) {
