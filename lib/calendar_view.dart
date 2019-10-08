@@ -9,6 +9,7 @@ typedef Widget DateBuilder(
     bool dayOfThisMonth,
     Widget Function(BuildContext context, DateTime date, bool isSelected, bool isToday, bool dayOfThisMonth)
         defaultBuilder);
+typedef String WeekDayFromIndex(int dayIndex);
 typedef void DateSelected(DateTime date);
 
 String _customLayoutId(int index) {
@@ -23,6 +24,7 @@ class CalendarView extends StatelessWidget {
   final double minRowHeight;
   final DateBuilder dateBuilder;
   final DateSelected dateSelected;
+  final WeekDayFromIndex weekDayFromIndex;
   final List<String> _weekdays;
   final DateTime _firstDayOfMonthView;
   final DateTime _firstDayOfMonth;
@@ -34,7 +36,8 @@ class CalendarView extends StatelessWidget {
       @required this.initialSelectedDate,
       @required this.minRowHeight,
       @required this.dateSelected,
-      this.dateBuilder})
+      this.dateBuilder,
+      this.weekDayFromIndex})
       : assert(initialSelectedDate != null),
         assert(minRowHeight != null),
         assert(dateSelected != null),
@@ -62,7 +65,7 @@ class CalendarView extends StatelessWidget {
       if (i < 7) {
         return LayoutId(
           id: _customLayoutId(i),
-          child: _buildWeekday(context, _weekdays[i]),
+          child: _buildWeekday(context, weekDayFromIndex == null ? _weekdays[i] : weekDayFromIndex(i)),
         );
       }
       return LayoutId(
@@ -104,17 +107,6 @@ class CalendarView extends StatelessWidget {
       color: isSelected ? Colors.blue[100] : null,
       child: result,
     );
-    // result = InkWell(
-    //   customBorder: CircleBorder(),
-    //   onTap: () {
-    //     dateSelected(date);
-    //   },
-    //   //   decoration: BoxDecoration(
-    //   //     shape: BoxShape.circle,
-    //   //     color: isSelected ? Colors.blue[100] : null,
-    //   //   ),
-    //   child: result,
-    // );
     return result;
   }
 }

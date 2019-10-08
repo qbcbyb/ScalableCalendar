@@ -20,7 +20,25 @@ class _MyAppState extends State<MyApp> {
         appBar: AppBar(
           title: const Text('Plugin example app'),
         ),
-        body: SwipebleCalendar(),
+        body: SwipebleCalendar(
+          weekDayFromIndex: (i) => const <String>["日", "一", "二", "三", "四", "五", "六"][i],
+          eventListView: ListView.builder(
+            itemCount: 5,
+            itemBuilder: (BuildContext context, int index) {
+              return Container(
+                height: 40,
+                child: Row(
+                  children: <Widget>[
+                    Icon(Icons.access_alarm),
+                    Expanded(
+                      child: Text("测试日历项$index"),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
       ),
     );
   }
