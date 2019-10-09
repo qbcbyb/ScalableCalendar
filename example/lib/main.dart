@@ -1,3 +1,4 @@
+import 'package:provider/provider.dart';
 import 'package:flutter/material.dart';
 
 import 'package:flutter_scalable_calendar/flutter_scalable_calendar.dart';
@@ -17,14 +18,40 @@ class DateTimeEvent {
 }
 
 class _MyAppState extends State<MyApp> {
+  ValueNotifier<DateTime> selectedDate;
+  @override
+  void initState() {
+    super.initState();
+    selectedDate = ValueNotifier<DateTime>(DateTime.now());
+  }
+
+  @override
+  void dispose() {
+    selectedDate.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: Scaffold(
+      home:
+          //   ValueListenableProvider<DateTime>(
+          //     builder: (_) => selectedDate,
+          //     child:
+          Scaffold(
         appBar: AppBar(
-          title: const Text('Plugin example app'),
+          // title: Consumer<DateTime>(
+          //   builder: (context, value, child) => Text("${value.year}年${value.month}月${value.day}日"),
+          // ),
+          title: ValueListenableBuilder<DateTime>(
+            valueListenable: selectedDate,
+            builder: (context, value, child) {
+              return Text("${value.year}年${value.month}月${value.day}日");
+            },
+          ),
         ),
         body: ScalableCalendar<DateTimeEvent>(
+          selectedDate: selectedDate,
           weekDayFromIndex: (i) => const <String>["日", "一", "二", "三", "四", "五", "六"][i],
           eventBuilder: (date) => isSameDay(date, DateTime.now())
               ? <DateTimeEvent>[
@@ -53,6 +80,7 @@ class _MyAppState extends State<MyApp> {
           ),
         ),
       ),
+      //   ),
     );
   }
 }

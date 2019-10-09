@@ -24,7 +24,6 @@ class _BaseSelectedDateAndPageIndex {
 }
 
 class ScalableCalendar<T> extends StatefulWidget {
-  final DateTime initialSelectedDate;
   final double minRowHeight;
 
   final WeekDayFromIndex weekDayFromIndex;
@@ -32,18 +31,19 @@ class ScalableCalendar<T> extends StatefulWidget {
 
   final EventBuilder<T> eventBuilder;
   final EventWidgetBuilder<T> eventWidgetBuilder;
+  final ValueNotifier<DateTime> selectedDate;
 
   ScalableCalendar({
     Key key,
-    DateTime initialSelectedDate,
+    this.selectedDate,
     this.minRowHeight = 40.0,
     this.weekDayFromIndex,
     this.dateBuilder,
     this.eventBuilder,
     this.eventWidgetBuilder,
-  })  : this.initialSelectedDate = (initialSelectedDate ?? DateTime.now()),
-        super(key: key);
-
+  }) : super(key: key);
+  DateTime get nowSelectedDate =>
+      (selectedDate == null || selectedDate.value == null) ? DateTime.now() : selectedDate.value;
   @override
   _ScalableCalendarState<T> createState() => _ScalableCalendarState<T>();
 }
@@ -57,6 +57,7 @@ class _ScalableCalendarState<T> extends State<ScalableCalendar<T>> {
   _BaseSelectedDateAndPageIndex get selectedDateAndPageIndex => _baseSelectedDateAndPageIndex;
   set selectedDateAndPageIndex(_BaseSelectedDateAndPageIndex value) {
     if (_baseSelectedDateAndPageIndex != value) {
+      widget.selectedDate.value = value.date;
       setState(() {
         _baseSelectedDateAndPageIndex = value;
       });
@@ -66,7 +67,7 @@ class _ScalableCalendarState<T> extends State<ScalableCalendar<T>> {
   @override
   void initState() {
     super.initState();
-    selectedDateAndPageIndex = _BaseSelectedDateAndPageIndex(START_PAGE, widget.initialSelectedDate);
+    selectedDateAndPageIndex = _BaseSelectedDateAndPageIndex(START_PAGE, widget.nowSelectedDate);
   }
 
   DateTime buildLayoutDate(int pageIndex) {
