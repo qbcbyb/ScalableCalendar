@@ -1,8 +1,8 @@
 name: flutter_scalable_calendar
 description: A Calendar based on NestedScrollView and PageView. You can drag it horizontally or vertically to switch monthly and weekly views.
 version: 0.0.1
-author:
-homepage:
+author: Hydrant <qbcbyb@live.cn>
+homepage: https://github.com/qbcbyb/ScalableCalendar
 
 environment:
   sdk: ">=2.1.0 <3.0.0"
