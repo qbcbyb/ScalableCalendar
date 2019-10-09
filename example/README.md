@@ -1,6 +1,6 @@
-# flutter_paged_calendar_example
+# flutter_scalable_calendar_example
 
-Demonstrates how to use the flutter_paged_calendar plugin.
+Demonstrates how to use the flutter_scalable_calendar plugin.
 
 ## Getting Started
 

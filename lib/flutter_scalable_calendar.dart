@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 import 'package:date_utils/date_utils.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_paged_calendar/calendar_view.dart';
+import 'package:flutter_scalable_calendar/calendar_view.dart';
 
 const START_PAGE = 10000;
 
@@ -23,7 +23,7 @@ class _BaseSelectedDateAndPageIndex {
   }
 }
 
-class PagedCalendar<T> extends StatefulWidget {
+class ScalableCalendar<T> extends StatefulWidget {
   final DateTime initialSelectedDate;
   final double minRowHeight;
 
@@ -33,7 +33,7 @@ class PagedCalendar<T> extends StatefulWidget {
   final EventBuilder<T> eventBuilder;
   final EventWidgetBuilder<T> eventWidgetBuilder;
 
-  PagedCalendar({
+  ScalableCalendar({
     Key key,
     DateTime initialSelectedDate,
     this.minRowHeight = 40.0,
@@ -45,10 +45,10 @@ class PagedCalendar<T> extends StatefulWidget {
         super(key: key);
 
   @override
-  _PagedCalendarState<T> createState() => _PagedCalendarState<T>();
+  _ScalableCalendarState<T> createState() => _ScalableCalendarState<T>();
 }
 
-class _PagedCalendarState<T> extends State<PagedCalendar<T>> {
+class _ScalableCalendarState<T> extends State<ScalableCalendar<T>> {
   PageController _pageController = PageController(initialPage: START_PAGE, keepPage: false);
 
   bool isInMonthView = true;

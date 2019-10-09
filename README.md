@@ -1,4 +1,4 @@
-# flutter_paged_calendar
+# flutter_scalable_calendar
 
 A new flutter plugin project.
 

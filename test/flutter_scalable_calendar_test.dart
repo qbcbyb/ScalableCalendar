@@ -2,7 +2,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  const MethodChannel channel = MethodChannel('flutter_paged_calendar');
+  const MethodChannel channel = MethodChannel('flutter_scalable_calendar');
 
   setUp(() {
     channel.setMockMethodCallHandler((MethodCall methodCall) async {
@@ -15,6 +15,6 @@ void main() {
   });
 
 //   test('getPlatformVersion', () async {
-//     expect(await pagedCalendar.platformVersion, '42');
+//     expect(await ScalableCalendar.platformVersion, '42');
 //   });
 }

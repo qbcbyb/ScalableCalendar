@@ -1,5 +1,5 @@
-name: flutter_paged_calendar_example
-description: Demonstrates how to use the flutter_paged_calendar plugin.
+name: flutter_scalable_calendar_example
+description: Demonstrates how to use the flutter_scalable_calendar plugin.
 publish_to: 'none'
 
 environment:
@@ -17,7 +17,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
 
-  flutter_paged_calendar:
+  flutter_scalable_calendar:
     path: ../
 
 # For information on the generic Dart part of this file, see the
