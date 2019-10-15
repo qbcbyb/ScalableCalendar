@@ -24,6 +24,9 @@ class _BaseSelectedDateAndPageIndex {
 }
 
 class ScalableCalendar<T> extends StatefulWidget {
+  static ScalableCalendarState of(BuildContext context) =>
+      context.ancestorStateOfType(const TypeMatcher<_ScalableCalendarState>());
+
   final double minRowHeight;
 
   final WeekDayFromIndex weekDayFromIndex;
@@ -32,6 +35,7 @@ class ScalableCalendar<T> extends StatefulWidget {
   final EventBuilder<T> eventBuilder;
   final EventWidgetBuilder<T> eventWidgetBuilder;
   final ValueNotifier<DateTime> selectedDate;
+  final Function(BuildContext context) onContextGetted;
 
   ScalableCalendar({
     Key key,
@@ -41,6 +45,7 @@ class ScalableCalendar<T> extends StatefulWidget {
     this.dateBuilder,
     this.eventBuilder,
     this.eventWidgetBuilder,
+    this.onContextGetted,
   }) : super(key: key);
   DateTime get nowSelectedDate =>
       (selectedDate == null || selectedDate.value == null) ? DateTime.now() : selectedDate.value;
@@ -48,7 +53,12 @@ class ScalableCalendar<T> extends StatefulWidget {
   _ScalableCalendarState<T> createState() => _ScalableCalendarState<T>();
 }
 
-class _ScalableCalendarState<T> extends State<ScalableCalendar<T>> {
+mixin ScalableCalendarState<T> implements State<ScalableCalendar<T>> {
+  bool get isInMonthView;
+  bool get isVerticalScrolling;
+}
+
+class _ScalableCalendarState<T> extends State<ScalableCalendar<T>> with ScalableCalendarState<T> {
   PageController _pageController = PageController(initialPage: START_PAGE, keepPage: false);
 
   bool isInMonthView = true;
@@ -88,24 +98,31 @@ class _ScalableCalendarState<T> extends State<ScalableCalendar<T>> {
 
   @override
   Widget build(BuildContext context) {
-    return NotificationListener<ScrollNotification>(
-      onNotification: (notification) {
-        if (notification is ScrollEndNotification) {
-          int pageIndex = _pageController.page.round();
-          if (pageIndex != selectedDateAndPageIndex.page) {
-            selectedDateAndPageIndex = _BaseSelectedDateAndPageIndex(pageIndex, buildLayoutDate(pageIndex));
-          }
+    return Builder(
+      builder: (context) {
+        if (widget.onContextGetted != null) {
+          widget.onContextGetted(context);
         }
-        return false;
+        return NotificationListener<ScrollNotification>(
+          onNotification: (notification) {
+            if (notification is ScrollEndNotification) {
+              int pageIndex = _pageController.page.round();
+              if (pageIndex != selectedDateAndPageIndex.page) {
+                selectedDateAndPageIndex = _BaseSelectedDateAndPageIndex(pageIndex, buildLayoutDate(pageIndex));
+              }
+            }
+            return false;
+          },
+          child: PageView.builder(
+            controller: _pageController,
+            physics: isVerticalScrolling ? NeverScrollableScrollPhysics() : null,
+            itemCount: START_PAGE * 2,
+            itemBuilder: (context, index) {
+              return buildNotificationListener(buildLayoutDate(index));
+            },
+          ),
+        );
       },
-      child: PageView.builder(
-        controller: _pageController,
-        physics: isVerticalScrolling ? NeverScrollableScrollPhysics() : null,
-        itemCount: START_PAGE * 2,
-        itemBuilder: (context, index) {
-          return buildNotificationListener(buildLayoutDate(index));
-        },
-      ),
     );
   }
 
