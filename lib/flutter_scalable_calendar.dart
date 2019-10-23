@@ -86,8 +86,10 @@ class _ScalableCalendarState<T> extends State<ScalableCalendar<T>> with Scalable
 
     final pageDiff = pageIndex - selectedDateAndPageIndex.page;
     if (isInMonthView) {
-      selectedDate = DateTime(initialSelectedDate.year, initialSelectedDate.month + pageDiff, initialSelectedDate.day);
-      while (selectedDate.month - initialSelectedDate.month != pageDiff) {
+      final newMonth = initialSelectedDate.month + pageDiff;
+      final realMonth = ((newMonth + 11) % 12) + 1;
+      selectedDate = DateTime(initialSelectedDate.year, newMonth, initialSelectedDate.day);
+      while (selectedDate.month != realMonth) {
         selectedDate = selectedDate.subtract(Duration(days: 1));
       }
     } else {
