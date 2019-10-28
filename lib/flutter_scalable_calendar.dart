@@ -27,26 +27,66 @@ class ScalableCalendar<T> extends StatefulWidget {
   static ScalableCalendarState of(BuildContext context) =>
       context.ancestorStateOfType(const TypeMatcher<_ScalableCalendarState>());
 
-  final double minRowHeight;
+  final double minItemHeight;
+  final double minItemWidth;
 
   final WeekDayFromIndex weekDayFromIndex;
+  final WeekDayBuilder weekDayBuilder;
   final DateBuilder dateBuilder;
 
   final EventBuilder<T> eventBuilder;
   final EventWidgetBuilder<T> eventWidgetBuilder;
   final ValueNotifier<DateTime> selectedDate;
+  final ValueNotifier<bool> isInMonthView;
   final Function(BuildContext context) onContextGetted;
 
-  ScalableCalendar({
+  ScalableCalendar._(
+      {Key key,
+      this.selectedDate,
+      this.minItemHeight,
+      this.minItemWidth,
+      this.weekDayFromIndex,
+      this.weekDayBuilder,
+      this.dateBuilder,
+      this.eventBuilder,
+      this.eventWidgetBuilder,
+      this.onContextGetted,
+      this.isInMonthView})
+      : super(key: key);
+  factory ScalableCalendar({
     Key key,
-    this.selectedDate,
-    this.minRowHeight = 40.0,
-    this.weekDayFromIndex,
-    this.dateBuilder,
-    this.eventBuilder,
-    this.eventWidgetBuilder,
-    this.onContextGetted,
-  }) : super(key: key);
+    ValueNotifier<DateTime> selectedDate,
+    ValueNotifier<bool> isInMonthView,
+    double minItemHeight = 40.0,
+    double minItemWidth = 40.0,
+    WeekDayFromIndex weekDayFromIndex,
+    WeekDayBuilder weekDayBuilder,
+    DateBuilder dateBuilder,
+    EventBuilder<T> eventBuilder,
+    eventWidgetBuilder,
+    Function(BuildContext context) onContextGetted,
+  }) {
+    DateTime _date;
+    _date = selectedDate?.value ?? DateTime.now();
+    _date = DateTime.utc(_date.year, _date.month, _date.day, 12);
+
+    selectedDate?.value = _date;
+
+    final _selectedDate = selectedDate ?? ValueNotifier<DateTime>(_date);
+    return ScalableCalendar._(
+      key: key,
+      selectedDate: _selectedDate,
+      isInMonthView: isInMonthView ?? ValueNotifier(true),
+      minItemHeight: minItemHeight,
+      minItemWidth: minItemWidth,
+      weekDayFromIndex: weekDayFromIndex,
+      weekDayBuilder: weekDayBuilder,
+      dateBuilder: dateBuilder,
+      eventBuilder: eventBuilder,
+      eventWidgetBuilder: eventWidgetBuilder,
+      onContextGetted: onContextGetted,
+    );
+  }
   DateTime get nowSelectedDate =>
       (selectedDate == null || selectedDate.value == null) ? DateTime.now() : selectedDate.value;
   @override
@@ -61,7 +101,11 @@ mixin ScalableCalendarState<T> implements State<ScalableCalendar<T>> {
 class _ScalableCalendarState<T> extends State<ScalableCalendar<T>> with ScalableCalendarState<T> {
   PageController _pageController = PageController(initialPage: START_PAGE, keepPage: false);
 
-  bool isInMonthView = true;
+  bool get isInMonthView => widget.isInMonthView.value;
+  set isInMonthView(bool value) {
+    widget.isInMonthView.value = value;
+  }
+
   bool isVerticalScrolling = false;
   _BaseSelectedDateAndPageIndex _baseSelectedDateAndPageIndex;
   _BaseSelectedDateAndPageIndex get selectedDateAndPageIndex => _baseSelectedDateAndPageIndex;
@@ -151,7 +195,7 @@ class _ScalableCalendarState<T> extends State<ScalableCalendar<T>> with Scalable
   }
 
   Widget buildSnappingContainer(DateTime nowSelectedDate) {
-    final headerMaxScrollOffset = widget.minRowHeight * 5;
+    final headerMaxScrollOffset = widget.minItemHeight * 5;
     final List<T> events = (widget.eventBuilder == null ? [] : widget.eventBuilder(nowSelectedDate)) ?? [];
     return NestedScrollView(
       controller: ScrollController(initialScrollOffset: isInMonthView ? 0 : headerMaxScrollOffset),
@@ -162,14 +206,15 @@ class _ScalableCalendarState<T> extends State<ScalableCalendar<T>> with Scalable
           child: SliverPersistentHeader(
             pinned: true,
             delegate: _CalendarViewDelegate(
-              minHeight: widget.minRowHeight * 2,
-              maxHeight: widget.minRowHeight * 7,
+              minHeight: widget.minItemHeight * 2,
+              maxHeight: widget.minItemHeight * 7,
               childBuilder: (context) => Container(
                 color: Colors.white,
                 child: CalendarView(
                   initialSelectedDate: nowSelectedDate,
-                  minRowHeight: widget.minRowHeight,
+                  minItemHeight: widget.minItemHeight,
                   weekDayFromIndex: widget.weekDayFromIndex,
+                  weekDayBuilder: widget.weekDayBuilder,
                   dateBuilder: widget.dateBuilder,
                   dateSelected: (date) {
                     int pageIndex = selectedDateAndPageIndex.page, pageDiff = 0;
