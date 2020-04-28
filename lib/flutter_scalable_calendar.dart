@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+
 import 'package:date_utils/date_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_scalable_calendar/calendar_view.dart';
@@ -25,7 +26,7 @@ class _BaseSelectedDateAndPageIndex {
 
 class ScalableCalendar<T> extends StatefulWidget {
   static ScalableCalendarState of(BuildContext context) =>
-      context.ancestorStateOfType(const TypeMatcher<_ScalableCalendarState>());
+      context.findAncestorStateOfType<_ScalableCalendarState>();
 
   final double minItemHeight;
   final double minItemWidth;
@@ -63,7 +64,7 @@ class ScalableCalendar<T> extends StatefulWidget {
     WeekDayBuilder weekDayBuilder,
     DateBuilder dateBuilder,
     EventBuilder<T> eventBuilder,
-    eventWidgetBuilder,
+    EventWidgetBuilder<T> eventWidgetBuilder,
     Function(BuildContext context) onContextGetted,
   }) {
     DateTime _date;
@@ -88,7 +89,9 @@ class ScalableCalendar<T> extends StatefulWidget {
     );
   }
   DateTime get nowSelectedDate =>
-      (selectedDate == null || selectedDate.value == null) ? DateTime.now() : selectedDate.value;
+      (selectedDate == null || selectedDate.value == null)
+          ? DateTime.now()
+          : selectedDate.value;
   @override
   _ScalableCalendarState<T> createState() => _ScalableCalendarState<T>();
 }
@@ -98,8 +101,10 @@ mixin ScalableCalendarState<T> implements State<ScalableCalendar<T>> {
   bool get isVerticalScrolling;
 }
 
-class _ScalableCalendarState<T> extends State<ScalableCalendar<T>> with ScalableCalendarState<T> {
-  PageController _pageController = PageController(initialPage: START_PAGE, keepPage: false);
+class _ScalableCalendarState<T> extends State<ScalableCalendar<T>>
+    with ScalableCalendarState<T> {
+  PageController _pageController =
+      PageController(initialPage: START_PAGE, keepPage: false);
 
   bool get isInMonthView => widget.isInMonthView.value;
   set isInMonthView(bool value) {
@@ -108,20 +113,88 @@ class _ScalableCalendarState<T> extends State<ScalableCalendar<T>> with Scalable
 
   bool isVerticalScrolling = false;
   _BaseSelectedDateAndPageIndex _baseSelectedDateAndPageIndex;
-  _BaseSelectedDateAndPageIndex get selectedDateAndPageIndex => _baseSelectedDateAndPageIndex;
+  _BaseSelectedDateAndPageIndex get selectedDateAndPageIndex =>
+      _baseSelectedDateAndPageIndex;
   set selectedDateAndPageIndex(_BaseSelectedDateAndPageIndex value) {
     if (_baseSelectedDateAndPageIndex != value) {
-      widget.selectedDate.value = value.date;
-      setState(() {
-        _baseSelectedDateAndPageIndex = value;
-      });
+      _baseSelectedDateAndPageIndex = value;
+      if (widget.selectedDate.value != value.date) {
+        widget.selectedDate.value = value.date;
+      }
+      setState(() {});
     }
   }
 
   @override
   void initState() {
     super.initState();
-    selectedDateAndPageIndex = _BaseSelectedDateAndPageIndex(START_PAGE, widget.nowSelectedDate);
+    selectedDateAndPageIndex =
+        _BaseSelectedDateAndPageIndex(START_PAGE, widget.nowSelectedDate);
+    widget.selectedDate.addListener(onDateChanged);
+  }
+
+  @override
+  void dispose() {
+    widget.selectedDate.removeListener(onDateChanged);
+    super.dispose();
+  }
+
+  void onDateChanged() {
+    if (widget.selectedDate.value != selectedDateAndPageIndex.date) {
+      changeToDate(widget.selectedDate.value);
+    }
+  }
+
+  void changeToDate(DateTime date) {
+    int pageIndex = selectedDateAndPageIndex.page, pageDiff = 0;
+    final nowSelectedDate = selectedDateAndPageIndex.date;
+    if (Utils.isSameDay(nowSelectedDate, date)) {
+      return;
+    }
+    if (isInMonthView &&
+        (nowSelectedDate.year != date.year ||
+            nowSelectedDate.month != date.month)) {
+      pageDiff = (date.year - nowSelectedDate.year) * 12 +
+          (date.month - nowSelectedDate.month);
+    }
+    if (pageDiff == 0) {
+      selectedDateAndPageIndex = _BaseSelectedDateAndPageIndex(pageIndex, date);
+    } else {
+      pageIndex += pageDiff;
+      _pageController
+          .animateToPage(pageIndex,
+              curve: Curves.easeInOut, duration: Duration(milliseconds: 300))
+          .then((_) {
+        selectedDateAndPageIndex =
+            _BaseSelectedDateAndPageIndex(pageIndex, date);
+      });
+    }
+  }
+
+  int getPageIndexByDate(DateTime date) {
+    final toDate = DateTime.utc(date.year, date.month, date.day, 12);
+    final initial = DateTime.utc(
+        selectedDateAndPageIndex.date.year,
+        selectedDateAndPageIndex.date.month,
+        selectedDateAndPageIndex.date.day,
+        12);
+    if (isInMonthView) {
+      return selectedDateAndPageIndex.page +
+          (toDate.year - initial.year) * 12 +
+          (toDate.month - initial.month);
+    } else {
+      final days = toDate.difference(initial).inDays;
+      final weekOffsetInt = (days / 7);
+      final daysOffsetInAWeek = days % 7;
+      final minWeekday =
+          toDate.weekday > initial.weekday ? initial.weekday : toDate.weekday;
+      if (minWeekday + daysOffsetInAWeek > 7) {
+        return selectedDateAndPageIndex.page +
+            (weekOffsetInt > 0 ? weekOffsetInt.ceil() : weekOffsetInt.floor());
+      } else {
+        return selectedDateAndPageIndex.page + weekOffsetInt.floor();
+      }
+    }
   }
 
   DateTime buildLayoutDate(int pageIndex) {
@@ -132,7 +205,8 @@ class _ScalableCalendarState<T> extends State<ScalableCalendar<T>> with Scalable
     if (isInMonthView) {
       final newMonth = initialSelectedDate.month + pageDiff;
       final realMonth = ((newMonth + 11) % 12) + 1;
-      selectedDate = DateTime(initialSelectedDate.year, newMonth, initialSelectedDate.day);
+      selectedDate =
+          DateTime(initialSelectedDate.year, newMonth, initialSelectedDate.day);
       while (selectedDate.month != realMonth) {
         selectedDate = selectedDate.subtract(Duration(days: 1));
       }
@@ -149,30 +223,13 @@ class _ScalableCalendarState<T> extends State<ScalableCalendar<T>> with Scalable
         if (widget.onContextGetted != null) {
           widget.onContextGetted(context);
         }
-        return NotificationListener<ScrollNotification>(
-          onNotification: (notification) {
-            if (notification is ScrollEndNotification) {
-              int pageIndex = _pageController.page.round();
-              if (pageIndex != selectedDateAndPageIndex.page) {
-                selectedDateAndPageIndex = _BaseSelectedDateAndPageIndex(pageIndex, buildLayoutDate(pageIndex));
-              }
-            }
-            return false;
-          },
-          child: PageView.builder(
-            controller: _pageController,
-            physics: isVerticalScrolling ? NeverScrollableScrollPhysics() : null,
-            itemCount: START_PAGE * 2,
-            itemBuilder: (context, index) {
-              return buildNotificationListener(buildLayoutDate(index));
-            },
-          ),
-        );
+        return buildNotificationListenerAndScrollView();
       },
     );
   }
 
-  NotificationListener<ScrollNotification> buildNotificationListener(DateTime nowSelectedDate) {
+  NotificationListener<ScrollNotification>
+      buildNotificationListenerAndScrollView() {
     return NotificationListener<ScrollNotification>(
       onNotification: (ScrollNotification notification) {
         if (notification.depth != 0) {
@@ -190,16 +247,17 @@ class _ScalableCalendarState<T> extends State<ScalableCalendar<T>> with Scalable
         }
         return false;
       },
-      child: buildSnappingContainer(nowSelectedDate),
+      child: buildSnappingContainer(),
     );
   }
 
-  Widget buildSnappingContainer(DateTime nowSelectedDate) {
+  Widget buildSnappingContainer() {
     final headerMaxScrollOffset = widget.minItemHeight * 5;
-    final List<T> events = (widget.eventBuilder == null ? [] : widget.eventBuilder(nowSelectedDate)) ?? [];
     return NestedScrollView(
-      controller: ScrollController(initialScrollOffset: isInMonthView ? 0 : headerMaxScrollOffset),
-      physics: _SnappingScrollPhysics(maxScrollOffset: () => headerMaxScrollOffset),
+      controller: ScrollController(
+          initialScrollOffset: isInMonthView ? 0 : headerMaxScrollOffset),
+      physics:
+          _SnappingScrollPhysics(maxScrollOffset: () => headerMaxScrollOffset),
       headerSliverBuilder: (context, innerBoxIsScrolled) => <Widget>[
         SliverOverlapAbsorber(
           handle: NestedScrollView.sliverOverlapAbsorberHandleFor(context),
@@ -208,36 +266,7 @@ class _ScalableCalendarState<T> extends State<ScalableCalendar<T>> with Scalable
             delegate: _CalendarViewDelegate(
               minHeight: widget.minItemHeight * 2,
               maxHeight: widget.minItemHeight * 7,
-              childBuilder: (context) => Container(
-                color: Colors.white,
-                child: CalendarView(
-                  initialSelectedDate: nowSelectedDate,
-                  minItemHeight: widget.minItemHeight,
-                  weekDayFromIndex: widget.weekDayFromIndex,
-                  weekDayBuilder: widget.weekDayBuilder,
-                  dateBuilder: widget.dateBuilder,
-                  dateSelected: (date) {
-                    int pageIndex = selectedDateAndPageIndex.page, pageDiff = 0;
-                    final nowSelectedDate = selectedDateAndPageIndex.date;
-                    if (Utils.isSameDay(nowSelectedDate, date)) {
-                      return;
-                    }
-                    if (isInMonthView && (nowSelectedDate.year != date.year || nowSelectedDate.month != date.month)) {
-                      pageDiff = (date.year - nowSelectedDate.year) * 12 + (date.month - nowSelectedDate.month);
-                    }
-                    if (pageDiff == 0) {
-                      selectedDateAndPageIndex = _BaseSelectedDateAndPageIndex(pageIndex, date);
-                    } else {
-                      pageIndex += pageDiff;
-                      _pageController
-                          .animateToPage(pageIndex, curve: Curves.easeInOut, duration: Duration(milliseconds: 300))
-                          .then((_) {
-                        selectedDateAndPageIndex = _BaseSelectedDateAndPageIndex(pageIndex, date);
-                      });
-                    }
-                  },
-                ),
-              ),
+              childBuilder: (context) => buildNotificationListenerAndPageView(),
             ),
           ),
         ),
@@ -248,19 +277,67 @@ class _ScalableCalendarState<T> extends State<ScalableCalendar<T>> with Scalable
             SliverOverlapInjector(
               handle: NestedScrollView.sliverOverlapAbsorberHandleFor(context),
             ),
-            SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (BuildContext context, int index) {
-                  return widget.eventWidgetBuilder == null
-                      ? Placeholder()
-                      : widget.eventWidgetBuilder(context, events[index]);
-                },
-                childCount: events.length,
-              ),
-            ),
+            ValueListenableBuilder<DateTime>(
+              valueListenable: widget.selectedDate,
+              builder: (context, value, child) {
+                final List<T> events = (widget.eventBuilder == null
+                        ? []
+                        : widget.eventBuilder(value)) ??
+                    [];
+                return SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (BuildContext context, int index) {
+                      if (widget.eventWidgetBuilder == null) {
+                        return Placeholder();
+                      }
+                      return widget.eventWidgetBuilder(context, events[index]);
+                    },
+                    childCount: events.length,
+                  ),
+                );
+              },
+            )
           ],
         );
       }),
+    );
+  }
+
+  NotificationListener<ScrollNotification>
+      buildNotificationListenerAndPageView() {
+    return NotificationListener<ScrollNotification>(
+      onNotification: (notification) {
+        if (notification is ScrollEndNotification) {
+          int pageIndex = _pageController.page.round();
+          if (pageIndex != selectedDateAndPageIndex.page) {
+            selectedDateAndPageIndex = _BaseSelectedDateAndPageIndex(
+                pageIndex, buildLayoutDate(pageIndex));
+          }
+        }
+        return false;
+      },
+      child: PageView.builder(
+        controller: _pageController,
+        physics: isVerticalScrolling ? NeverScrollableScrollPhysics() : null,
+        itemCount: START_PAGE * 2,
+        itemBuilder: (context, index) {
+          return buildCalendarView(buildLayoutDate(index));
+        },
+      ),
+    );
+  }
+
+  Container buildCalendarView(DateTime nowSelectedDate) {
+    return Container(
+      color: Colors.white,
+      child: CalendarView(
+        initialSelectedDate: nowSelectedDate,
+        minItemHeight: widget.minItemHeight,
+        weekDayFromIndex: widget.weekDayFromIndex,
+        weekDayBuilder: widget.weekDayBuilder,
+        dateBuilder: widget.dateBuilder,
+        dateSelected: changeToDate,
+      ),
     );
   }
 }
@@ -282,7 +359,8 @@ class _CalendarViewDelegate extends SliverPersistentHeaderDelegate {
   double get maxExtent => math.max(maxHeight, minHeight);
 
   @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+  Widget build(
+      BuildContext context, double shrinkOffset, bool overlapsContent) {
     return SizedBox.expand(
       child: childBuilder(context),
     );
@@ -310,22 +388,27 @@ class _SnappingScrollPhysics extends ClampingScrollPhysics {
 
   @override
   _SnappingScrollPhysics applyTo(ScrollPhysics ancestor) {
-    return _SnappingScrollPhysics(parent: buildParent(ancestor), maxScrollOffset: maxScrollOffset);
+    return _SnappingScrollPhysics(
+        parent: buildParent(ancestor), maxScrollOffset: maxScrollOffset);
   }
 
   Simulation _toMaxScrollOffsetSimulation(double offset, double dragVelocity) {
     final double velocity = math.max(dragVelocity, minFlingVelocity);
-    return ScrollSpringSimulation(spring, offset, maxScrollOffset(), velocity, tolerance: tolerance);
+    return ScrollSpringSimulation(spring, offset, maxScrollOffset(), velocity,
+        tolerance: tolerance);
   }
 
   Simulation _toMinScrollOffsetSimulation(double offset, double dragVelocity) {
     final double velocity = math.min(dragVelocity, -minFlingVelocity);
-    return ScrollSpringSimulation(spring, offset, 0, velocity, tolerance: tolerance);
+    return ScrollSpringSimulation(spring, offset, 0, velocity,
+        tolerance: tolerance);
   }
 
   @override
-  Simulation createBallisticSimulation(ScrollMetrics position, double dragVelocity) {
-    final Simulation simulation = super.createBallisticSimulation(position, dragVelocity);
+  Simulation createBallisticSimulation(
+      ScrollMetrics position, double dragVelocity) {
+    final Simulation simulation =
+        super.createBallisticSimulation(position, dragVelocity);
     final double offset = position.pixels;
     var maxOffset = maxScrollOffset();
 

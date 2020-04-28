@@ -2,10 +2,10 @@ import 'package:date_utils/date_utils.dart';
 import 'package:flutter/material.dart';
 
 typedef Widget WeekDayBuilder(BuildContext context, String weekday);
-typedef Widget DefaultDateBuilder(
-    BuildContext context, DateTime date, bool isSelected, bool isToday, bool dayOfThisMonth);
-typedef Widget DateBuilder(BuildContext context, DateTime date, bool isSelected, bool isToday, bool dayOfThisMonth,
-    DefaultDateBuilder defaultBuilder);
+typedef Widget DefaultDateBuilder(BuildContext context, DateTime date,
+    bool isSelected, bool isToday, bool dayOfThisMonth);
+typedef Widget DateBuilder(BuildContext context, DateTime date, bool isSelected,
+    bool isToday, bool dayOfThisMonth, DefaultDateBuilder defaultBuilder);
 typedef String WeekDayFromIndex(int dayIndex);
 typedef void DateSelected(DateTime date);
 
@@ -40,22 +40,25 @@ class CalendarView extends StatelessWidget {
       this.dateBuilder,
       this.weekDayFromIndex})
       : assert(initialSelectedDate != null),
-        initialSelectedDate =
-            DateTime.utc(initialSelectedDate.year, initialSelectedDate.month, initialSelectedDate.day, 12),
+        initialSelectedDate = DateTime.utc(initialSelectedDate.year,
+            initialSelectedDate.month, initialSelectedDate.day, 12),
         minItemHeight = minItemHeight ?? 40,
         minItemWidth = minItemWidth ?? 40,
         assert(dateSelected != null),
         _weekdays = Utils.weekdays,
         _firstDayOfMonth = Utils.firstDayOfMonth(initialSelectedDate),
         _lastDayOfMonth = Utils.lastDayOfMonth(initialSelectedDate),
-        _firstDayOfMonthView = Utils.firstDayOfWeek(Utils.firstDayOfMonth(initialSelectedDate)),
+        _firstDayOfMonthView =
+            Utils.firstDayOfWeek(Utils.firstDayOfMonth(initialSelectedDate)),
         _firstDayOfWeek = Utils.firstDayOfWeek(initialSelectedDate),
         super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    int selectedWeekIndex = (_firstDayOfWeek.difference(_firstDayOfMonthView).inDays / 7).round();
-    int selectedDayIndexInWeek = (initialSelectedDate.difference(_firstDayOfWeek).inDays);
+    int selectedWeekIndex =
+        (_firstDayOfWeek.difference(_firstDayOfMonthView).inDays / 7).round();
+    int selectedDayIndexInWeek =
+        (initialSelectedDate.difference(_firstDayOfWeek).inDays);
     return CustomMultiChildLayout(
       delegate: MultiCalendarTileLayoutDelegate(
         minItemHeight: minItemHeight,
@@ -72,47 +75,55 @@ class CalendarView extends StatelessWidget {
       if (i < 7) {
         return LayoutId(
           id: _customLayoutId(i),
-          child: _buildWeekday(context, weekDayFromIndex == null ? _weekdays[i] : weekDayFromIndex(i)),
+          child: _buildWeekday(context,
+              weekDayFromIndex == null ? _weekdays[i] : weekDayFromIndex(i)),
         );
       }
       return LayoutId(
         id: _customLayoutId(i),
-        child: _parseAndBuildDate(context, _firstDayOfMonthView.add(Duration(days: i - 7))),
+        child: _parseAndBuildDate(
+            context, _firstDayOfMonthView.add(Duration(days: i - 7))),
       );
     });
   }
 
-  Widget _buildWeekday(BuildContext context, String weekday) => weekDayBuilder != null
-      ? weekDayBuilder(context, weekday)
-      : Center(
-          child: Text(
-            weekday,
-            softWrap: false,
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey[500],
-            ),
-          ),
-        );
+  Widget _buildWeekday(BuildContext context, String weekday) =>
+      weekDayBuilder != null
+          ? weekDayBuilder(context, weekday)
+          : Center(
+              child: Text(
+                weekday,
+                softWrap: false,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey[500],
+                ),
+              ),
+            );
   Widget _parseAndBuildDate(BuildContext context, DateTime date) {
     bool isToday = Utils.isSameDay(date, today);
     bool isSelected = Utils.isSameDay(date, initialSelectedDate);
-    bool dayOfThisMonth = (date.isAfter(_firstDayOfMonth) || Utils.isSameDay(date, _firstDayOfMonth)) &&
-        (date.isBefore(_lastDayOfMonth) || Utils.isSameDay(date, _lastDayOfMonth));
+    bool dayOfThisMonth = (date.isAfter(_firstDayOfMonth) ||
+            Utils.isSameDay(date, _firstDayOfMonth)) &&
+        (date.isBefore(_lastDayOfMonth) ||
+            Utils.isSameDay(date, _lastDayOfMonth));
     return dateBuilder == null
         ? _buildDate(context, date, isSelected, isToday, dayOfThisMonth)
-        : dateBuilder(context, date, isSelected, isToday, dayOfThisMonth, _buildDate);
+        : dateBuilder(
+            context, date, isSelected, isToday, dayOfThisMonth, _buildDate);
   }
 
-  Widget _buildDate(BuildContext context, DateTime date, bool isSelected, bool isToday, bool dayOfThisMonth) {
+  Widget _buildDate(BuildContext context, DateTime date, bool isSelected,
+      bool isToday, bool dayOfThisMonth) {
     Widget result = Center(
       child: Text(
         date.day.toString(),
         softWrap: false,
         style: TextStyle(
           fontSize: 16,
-          color:
-              isToday ? (isSelected ? Colors.white : Colors.blue) : (dayOfThisMonth ? Colors.black : Colors.grey[400]),
+          color: isToday
+              ? (isSelected ? Colors.white : Colors.blue)
+              : (dayOfThisMonth ? Colors.black : Colors.grey[400]),
         ),
       ),
     );
@@ -153,7 +164,7 @@ class MultiCalendarTileLayoutDelegate extends MultiChildLayoutDelegate {
       if (j != selectedDayIndexInWeek) {
         minWidth = (width - minItemWidth) / 6;
       }
-      return minWidth.clamp(0.0, width);
+      return minWidth.clamp(0.0, width).toDouble();
     });
     double lastBottom = 0;
     for (var i = 0; i < ROW_COUNT_IN_VIEW; i++) {
@@ -171,7 +182,7 @@ class MultiCalendarTileLayoutDelegate extends MultiChildLayoutDelegate {
           }
         }
       }
-      minHeight = minHeight.clamp(0.0, height);
+      minHeight = minHeight.clamp(0.0, height).toDouble();
       final hasHeight = minHeight > 0;
       double lastLeft = 0;
       for (var j = 0; j < 7; j++) {
@@ -179,7 +190,8 @@ class MultiCalendarTileLayoutDelegate extends MultiChildLayoutDelegate {
         final minWidth = widthOfTiles[j];
         final layoutId = _customLayoutId(widgetIndex);
         if (hasHeight && minWidth > 0) {
-          layoutChild(layoutId, BoxConstraints.loose(Size(minWidth, minHeight)));
+          layoutChild(
+              layoutId, BoxConstraints.loose(Size(minWidth, minHeight)));
           positionChild(layoutId, Offset(lastLeft, lastBottom));
           lastLeft += minWidth;
         } else {

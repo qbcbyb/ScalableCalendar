@@ -1,6 +1,4 @@
-import 'package:provider/provider.dart';
 import 'package:flutter/material.dart';
-
 import 'package:flutter_scalable_calendar/flutter_scalable_calendar.dart';
 
 void main() => runApp(MyApp());
@@ -49,12 +47,23 @@ class _MyAppState extends State<MyApp> {
               return Text("${value.year}年${value.month}月${value.day}日");
             },
           ),
+          actions: <Widget>[
+            IconButton(
+              icon: Icon(Icons.calendar_today),
+              onPressed: () {
+                selectedDate.value = DateTime.now();
+              },
+            )
+          ],
         ),
         body: ScalableCalendar<DateTimeEvent>(
           selectedDate: selectedDate,
-          weekDayFromIndex: (i) => const <String>["日", "一", "二", "三", "四", "五", "六"][i],
+          weekDayFromIndex: (i) =>
+              const <String>["日", "一", "二", "三", "四", "五", "六"][i],
           eventBuilder: (date) => isSameDay(date, DateTime.now())
               ? <DateTimeEvent>[
+                  DateTimeEvent("测试", "测试"),
+                  DateTimeEvent("测试", "测试"),
                   DateTimeEvent("测试", "测试"),
                   DateTimeEvent("测试", "测试"),
                   DateTimeEvent("测试", "测试"),
