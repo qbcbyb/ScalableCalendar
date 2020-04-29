@@ -3,7 +3,7 @@ buildscript {
     repositories {
         mavenLocal()
         maven {
-            url "http://124.127.40.85:8810/repository/maven-public/"
+            url "https://maven.aliyun.com/repository/public"
         }
         google()
         jcenter()
@@ -19,7 +19,7 @@ allprojects {
     repositories {
         mavenLocal()
         maven {
-            url "http://124.127.40.85:8810/repository/maven-public/"
+            url "https://maven.aliyun.com/repository/public"
         }
         google()
         jcenter()
