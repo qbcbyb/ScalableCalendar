@@ -191,12 +191,12 @@ class MultiCalendarTileLayoutDelegate extends MultiChildLayoutDelegate {
         final layoutId = _customLayoutId(widgetIndex);
         if (hasHeight && minWidth > 0) {
           layoutChild(
-              layoutId, BoxConstraints.loose(Size(minWidth, minHeight)));
+              layoutId, BoxConstraints.tight(Size(minWidth, minHeight)));
           positionChild(layoutId, Offset(lastLeft, lastBottom));
           lastLeft += minWidth;
         } else {
-          layoutChild(layoutId, BoxConstraints.loose(Size.zero));
-          positionChild(layoutId, Offset.infinite);
+          layoutChild(layoutId, BoxConstraints.tight(Size.zero));
+          positionChild(layoutId, Offset.zero);
         }
       }
       if (hasHeight) {
