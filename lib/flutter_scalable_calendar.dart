@@ -30,6 +30,8 @@ class ScalableCalendar<T> extends StatefulWidget {
 
   final double minItemHeight;
   final double minItemWidth;
+  final EdgeInsetsGeometry paddingOfCalendarView;
+  final Decoration decorationOfCalendarView;
 
   final WeekDayFromIndex weekDayFromIndex;
   final WeekDayBuilder weekDayBuilder;
@@ -46,6 +48,8 @@ class ScalableCalendar<T> extends StatefulWidget {
       this.selectedDate,
       this.minItemHeight,
       this.minItemWidth,
+      this.paddingOfCalendarView,
+      this.decorationOfCalendarView,
       this.weekDayFromIndex,
       this.weekDayBuilder,
       this.dateBuilder,
@@ -53,13 +57,18 @@ class ScalableCalendar<T> extends StatefulWidget {
       this.eventWidgetBuilder,
       this.onContextGetted,
       this.isInMonthView})
-      : super(key: key);
+      : assert(paddingOfCalendarView == null ||
+            paddingOfCalendarView.isNonNegative),
+        super(key: key);
   factory ScalableCalendar({
     Key key,
     ValueNotifier<DateTime> selectedDate,
     ValueNotifier<bool> isInMonthView,
     double minItemHeight = 40.0,
     double minItemWidth = 40.0,
+    EdgeInsetsGeometry paddingOfCalendarView,
+    Color bgColorOfCalendarView,
+    Decoration decorationOfCalendarView,
     WeekDayFromIndex weekDayFromIndex,
     WeekDayBuilder weekDayBuilder,
     DateBuilder dateBuilder,
@@ -74,12 +83,19 @@ class ScalableCalendar<T> extends StatefulWidget {
     selectedDate?.value = _date;
 
     final _selectedDate = selectedDate ?? ValueNotifier<DateTime>(_date);
+
+    assert(bgColorOfCalendarView == null || decorationOfCalendarView == null);
+    if (bgColorOfCalendarView != null) {
+      decorationOfCalendarView = BoxDecoration(color: bgColorOfCalendarView);
+    }
     return ScalableCalendar._(
       key: key,
       selectedDate: _selectedDate,
       isInMonthView: isInMonthView ?? ValueNotifier(true),
       minItemHeight: minItemHeight,
       minItemWidth: minItemWidth,
+      paddingOfCalendarView: paddingOfCalendarView,
+      decorationOfCalendarView: decorationOfCalendarView,
       weekDayFromIndex: weekDayFromIndex,
       weekDayBuilder: weekDayBuilder,
       dateBuilder: dateBuilder,
@@ -253,6 +269,7 @@ class _ScalableCalendarState<T> extends State<ScalableCalendar<T>>
 
   Widget buildSnappingContainer() {
     final headerMaxScrollOffset = widget.minItemHeight * 5;
+    final paddingVertical = widget.paddingOfCalendarView?.vertical ?? 0;
     return NestedScrollView(
       controller: ScrollController(
           initialScrollOffset: isInMonthView ? 0 : headerMaxScrollOffset),
@@ -264,9 +281,24 @@ class _ScalableCalendarState<T> extends State<ScalableCalendar<T>>
           child: SliverPersistentHeader(
             pinned: true,
             delegate: _CalendarViewDelegate(
-              minHeight: widget.minItemHeight * 2,
-              maxHeight: widget.minItemHeight * 7,
-              childBuilder: (context) => buildNotificationListenerAndPageView(),
+              minHeight: widget.minItemHeight * 2 + paddingVertical,
+              maxHeight: widget.minItemHeight * 7 + paddingVertical,
+              childBuilder: (context) {
+                Widget result = buildNotificationListenerAndPageView();
+                if (widget.paddingOfCalendarView != null) {
+                  result = Padding(
+                    padding: widget.paddingOfCalendarView,
+                    child: result,
+                  );
+                }
+                if (widget.decorationOfCalendarView != null) {
+                  result = DecoratedBox(
+                    decoration: widget.decorationOfCalendarView,
+                    child: result,
+                  );
+                }
+                return result;
+              },
             ),
           ),
         ),
@@ -327,17 +359,14 @@ class _ScalableCalendarState<T> extends State<ScalableCalendar<T>>
     );
   }
 
-  Container buildCalendarView(DateTime nowSelectedDate) {
-    return Container(
-      color: Colors.white,
-      child: CalendarView(
-        initialSelectedDate: nowSelectedDate,
-        minItemHeight: widget.minItemHeight,
-        weekDayFromIndex: widget.weekDayFromIndex,
-        weekDayBuilder: widget.weekDayBuilder,
-        dateBuilder: widget.dateBuilder,
-        dateSelected: changeToDate,
-      ),
+  Widget buildCalendarView(DateTime nowSelectedDate) {
+    return CalendarView(
+      initialSelectedDate: nowSelectedDate,
+      minItemHeight: widget.minItemHeight,
+      weekDayFromIndex: widget.weekDayFromIndex,
+      weekDayBuilder: widget.weekDayBuilder,
+      dateBuilder: widget.dateBuilder,
+      dateSelected: changeToDate,
     );
   }
 }
