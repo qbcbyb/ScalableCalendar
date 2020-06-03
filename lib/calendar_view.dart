@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 
 typedef Widget WeekDayBuilder(BuildContext context, String weekday);
 typedef Widget DefaultDateBuilder(BuildContext context, DateTime date,
-    bool isSelected, bool isToday, bool dayOfThisMonth);
+    bool isSelected, bool isToday, bool isDayEnabled);
 typedef Widget DateBuilder(BuildContext context, DateTime date, bool isSelected,
     bool isToday, bool dayOfThisMonth, DefaultDateBuilder defaultBuilder);
 typedef String WeekDayFromIndex(int dayIndex);
@@ -15,9 +15,14 @@ String _customLayoutId(int index) {
 
 const ROW_COUNT_IN_VIEW = 7;
 
+///获取给定时间的中午12点
+DateTime getMiddleOfDate(DateTime date) {
+  return DateTime.utc(date.year, date.month, date.day, 12);
+}
+
 class CalendarView extends StatelessWidget {
   final DateTime initialSelectedDate;
-  final DateTime today = DateTime.now();
+  final DateTime today = getMiddleOfDate(DateTime.now());
   final double minItemHeight;
   final double minItemWidth;
   final WeekDayBuilder weekDayBuilder;
@@ -29,19 +34,37 @@ class CalendarView extends StatelessWidget {
   final DateTime _firstDayOfMonth;
   final DateTime _lastDayOfMonth;
   final DateTime _firstDayOfWeek;
+  final Color defaultColor;
+  final Color selectedColor;
+  final Color disabledColor;
 
-  CalendarView(
-      {Key key,
-      @required DateTime initialSelectedDate,
-      double minItemHeight,
-      double minItemWidth,
-      @required this.dateSelected,
-      this.weekDayBuilder,
-      this.dateBuilder,
-      this.weekDayFromIndex})
-      : assert(initialSelectedDate != null),
-        initialSelectedDate = DateTime.utc(initialSelectedDate.year,
-            initialSelectedDate.month, initialSelectedDate.day, 12),
+  final Color weekdayTextColor;
+  final Color defaultTextColor;
+  final Color selectedTextColor;
+  final Color disabledTextColor;
+  final Color todayTextColor;
+  final Color todaySelectedTextColor;
+
+  CalendarView({
+    Key key,
+    @required DateTime initialSelectedDate,
+    double minItemHeight,
+    double minItemWidth,
+    @required this.dateSelected,
+    this.weekDayBuilder,
+    this.dateBuilder,
+    this.weekDayFromIndex,
+    Color defaultColor,
+    Color selectedColor,
+    Color disabledColor,
+    Color weekdayTextColor,
+    Color defaultTextColor,
+    Color selectedTextColor,
+    Color disabledTextColor,
+    Color todayTextColor,
+    Color todaySelectedTextColor,
+  })  : assert(initialSelectedDate != null),
+        initialSelectedDate = getMiddleOfDate(initialSelectedDate),
         minItemHeight = minItemHeight ?? 40,
         minItemWidth = minItemWidth ?? 40,
         assert(dateSelected != null),
@@ -51,6 +74,15 @@ class CalendarView extends StatelessWidget {
         _firstDayOfMonthView =
             Utils.firstDayOfWeek(Utils.firstDayOfMonth(initialSelectedDate)),
         _firstDayOfWeek = Utils.firstDayOfWeek(initialSelectedDate),
+        this.defaultColor = defaultColor ?? Colors.transparent,
+        this.selectedColor = selectedColor ?? Colors.blue[100],
+        this.disabledColor = disabledColor ?? Colors.transparent,
+        this.weekdayTextColor = weekdayTextColor ?? Colors.grey[500],
+        this.defaultTextColor = defaultTextColor ?? Colors.grey[700],
+        this.selectedTextColor = selectedTextColor ?? Colors.white,
+        this.disabledTextColor = disabledTextColor ?? Colors.grey[400],
+        this.todayTextColor = todayTextColor ?? Colors.blue,
+        this.todaySelectedTextColor = todaySelectedTextColor ?? Colors.white,
         super(key: key);
 
   @override
@@ -96,7 +128,7 @@ class CalendarView extends StatelessWidget {
                 softWrap: false,
                 style: TextStyle(
                   fontSize: 16,
-                  color: Colors.grey[500],
+                  color: weekdayTextColor,
                 ),
               ),
             );
@@ -114,7 +146,7 @@ class CalendarView extends StatelessWidget {
   }
 
   Widget _buildDate(BuildContext context, DateTime date, bool isSelected,
-      bool isToday, bool dayOfThisMonth) {
+      bool isToday, bool isDayEnabled) {
     Widget result = Center(
       child: Text(
         date.day.toString(),
@@ -122,8 +154,10 @@ class CalendarView extends StatelessWidget {
         style: TextStyle(
           fontSize: 16,
           color: isToday
-              ? (isSelected ? Colors.white : Colors.blue)
-              : (dayOfThisMonth ? Colors.black : Colors.grey[400]),
+              ? (isSelected ? todaySelectedTextColor : todayTextColor)
+              : (isSelected
+                  ? selectedTextColor
+                  : (isDayEnabled ? defaultTextColor : disabledTextColor)),
         ),
       ),
     );
@@ -132,7 +166,9 @@ class CalendarView extends StatelessWidget {
         dateSelected(date);
       },
       shape: CircleBorder(),
-      color: isSelected ? Colors.blue[100] : null,
+      color: isSelected
+          ? selectedColor
+          : (isDayEnabled ? defaultColor : disabledColor),
       child: result,
     );
     return result;

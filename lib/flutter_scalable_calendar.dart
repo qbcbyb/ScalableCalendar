@@ -41,23 +41,40 @@ class ScalableCalendar<T> extends StatefulWidget {
   final EventWidgetBuilder<T> eventWidgetBuilder;
   final ValueNotifier<DateTime> selectedDate;
   final ValueNotifier<bool> isInMonthView;
-  final Function(BuildContext context) onContextGetted;
 
-  ScalableCalendar._(
-      {Key key,
-      this.selectedDate,
-      this.minItemHeight,
-      this.minItemWidth,
-      this.paddingOfCalendarView,
-      this.decorationOfCalendarView,
-      this.weekDayFromIndex,
-      this.weekDayBuilder,
-      this.dateBuilder,
-      this.eventBuilder,
-      this.eventWidgetBuilder,
-      this.onContextGetted,
-      this.isInMonthView})
-      : assert(paddingOfCalendarView == null ||
+  final Color defaultColor;
+  final Color selectedColor;
+  final Color disabledColor;
+  final Color weekdayTextColor;
+  final Color defaultTextColor;
+  final Color selectedTextColor;
+  final Color disabledTextColor;
+  final Color todayTextColor;
+  final Color todaySelectedTextColor;
+
+  ScalableCalendar._({
+    Key key,
+    this.selectedDate,
+    this.minItemHeight,
+    this.minItemWidth,
+    this.paddingOfCalendarView,
+    this.decorationOfCalendarView,
+    this.weekDayFromIndex,
+    this.weekDayBuilder,
+    this.dateBuilder,
+    this.eventBuilder,
+    this.eventWidgetBuilder,
+    this.isInMonthView,
+    this.defaultColor,
+    this.selectedColor,
+    this.disabledColor,
+    this.weekdayTextColor,
+    this.defaultTextColor,
+    this.selectedTextColor,
+    this.disabledTextColor,
+    this.todayTextColor,
+    this.todaySelectedTextColor,
+  })  : assert(paddingOfCalendarView == null ||
             paddingOfCalendarView.isNonNegative),
         super(key: key);
   factory ScalableCalendar({
@@ -74,7 +91,15 @@ class ScalableCalendar<T> extends StatefulWidget {
     DateBuilder dateBuilder,
     EventBuilder<T> eventBuilder,
     EventWidgetBuilder<T> eventWidgetBuilder,
-    Function(BuildContext context) onContextGetted,
+    Color defaultColor,
+    Color selectedColor,
+    Color disabledColor,
+    Color weekdayTextColor,
+    Color defaultTextColor,
+    Color selectedTextColor,
+    Color disabledTextColor,
+    Color todayTextColor,
+    Color todaySelectedTextColor,
   }) {
     DateTime _date;
     _date = selectedDate?.value ?? DateTime.now();
@@ -101,7 +126,15 @@ class ScalableCalendar<T> extends StatefulWidget {
       dateBuilder: dateBuilder,
       eventBuilder: eventBuilder,
       eventWidgetBuilder: eventWidgetBuilder,
-      onContextGetted: onContextGetted,
+      defaultColor: defaultColor,
+      selectedColor: selectedColor,
+      disabledColor: disabledColor,
+      weekdayTextColor: weekdayTextColor,
+      defaultTextColor: defaultTextColor,
+      selectedTextColor: selectedTextColor,
+      disabledTextColor: disabledTextColor,
+      todayTextColor: todayTextColor,
+      todaySelectedTextColor: todaySelectedTextColor,
     );
   }
   DateTime get nowSelectedDate =>
@@ -234,18 +267,10 @@ class _ScalableCalendarState<T> extends State<ScalableCalendar<T>>
 
   @override
   Widget build(BuildContext context) {
-    return Builder(
-      builder: (context) {
-        if (widget.onContextGetted != null) {
-          widget.onContextGetted(context);
-        }
-        return buildNotificationListenerAndScrollView();
-      },
-    );
+    return buildNotificationListenerAndScrollView();
   }
 
-  NotificationListener<ScrollNotification>
-      buildNotificationListenerAndScrollView() {
+  Widget buildNotificationListenerAndScrollView() {
     return NotificationListener<ScrollNotification>(
       onNotification: (ScrollNotification notification) {
         if (notification.depth != 0) {
@@ -278,7 +303,7 @@ class _ScalableCalendarState<T> extends State<ScalableCalendar<T>>
       headerSliverBuilder: (context, innerBoxIsScrolled) => <Widget>[
         SliverOverlapAbsorber(
           handle: NestedScrollView.sliverOverlapAbsorberHandleFor(context),
-          child: SliverPersistentHeader(
+          sliver: SliverPersistentHeader(
             pinned: true,
             delegate: _CalendarViewDelegate(
               minHeight: widget.minItemHeight * 2 + paddingVertical,
@@ -335,8 +360,7 @@ class _ScalableCalendarState<T> extends State<ScalableCalendar<T>>
     );
   }
 
-  NotificationListener<ScrollNotification>
-      buildNotificationListenerAndPageView() {
+  Widget buildNotificationListenerAndPageView() {
     return NotificationListener<ScrollNotification>(
       onNotification: (notification) {
         if (notification is ScrollEndNotification) {
@@ -367,6 +391,15 @@ class _ScalableCalendarState<T> extends State<ScalableCalendar<T>>
       weekDayBuilder: widget.weekDayBuilder,
       dateBuilder: widget.dateBuilder,
       dateSelected: changeToDate,
+      defaultColor: widget.defaultColor,
+      selectedColor: widget.selectedColor,
+      disabledColor: widget.disabledColor,
+      weekdayTextColor: widget.weekdayTextColor,
+      defaultTextColor: widget.defaultTextColor,
+      selectedTextColor: widget.selectedTextColor,
+      disabledTextColor: widget.disabledTextColor,
+      todayTextColor: widget.todayTextColor,
+      todaySelectedTextColor: widget.todaySelectedTextColor,
     );
   }
 }
