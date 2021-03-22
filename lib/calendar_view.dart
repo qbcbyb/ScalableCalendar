@@ -1,5 +1,6 @@
-import 'package:date_utils/date_utils.dart';
 import 'package:flutter/material.dart';
+
+import 'utils.dart';
 
 typedef Widget WeekDayBuilder(BuildContext context, String weekday);
 typedef Widget DefaultDateBuilder(BuildContext context, DateTime date,

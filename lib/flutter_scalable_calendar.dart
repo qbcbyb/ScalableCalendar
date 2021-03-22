@@ -1,16 +1,17 @@
 import 'dart:math' as math;
 
-import 'package:date_utils/date_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_scalable_calendar/calendar_view.dart';
+
+import 'utils.dart';
+
+export 'calendar_view.dart';
+export 'utils.dart';
 
 const START_PAGE = 10000;
 
 typedef List<T> EventBuilder<T>(DateTime selectedDate);
 typedef Widget EventWidgetBuilder<T>(BuildContext context, T eventData);
-
-const isSameDay = Utils.isSameDay;
-const isSameWeek = Utils.isSameWeek;
 
 class _BaseSelectedDateAndPageIndex {
   final int page;
