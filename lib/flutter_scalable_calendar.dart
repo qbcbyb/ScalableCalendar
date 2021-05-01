@@ -10,8 +10,8 @@ export 'utils.dart';
 
 const START_PAGE = 10000;
 
-typedef List<T> EventBuilder<T>(DateTime selectedDate);
-typedef Widget EventWidgetBuilder<T>(BuildContext context, T eventData);
+typedef Widget EventWidgetBuilder(BuildContext context,
+    ValueNotifier<DateTime> selectedDate, Widget eventChild);
 
 class _BaseSelectedDateAndPageIndex {
   final int page;
@@ -25,7 +25,7 @@ class _BaseSelectedDateAndPageIndex {
   }
 }
 
-class ScalableCalendar<T> extends StatefulWidget {
+class ScalableCalendar extends StatefulWidget {
   static ScalableCalendarState of(BuildContext context) =>
       context.findAncestorStateOfType<_ScalableCalendarState>();
 
@@ -38,8 +38,8 @@ class ScalableCalendar<T> extends StatefulWidget {
   final WeekDayBuilder weekDayBuilder;
   final DateBuilder dateBuilder;
 
-  final EventBuilder<T> eventBuilder;
-  final EventWidgetBuilder<T> eventWidgetBuilder;
+  final EventWidgetBuilder eventWidgetBuilder;
+  final Widget eventChild;
   final ValueNotifier<DateTime> selectedDate;
   final ValueNotifier<bool> isInMonthView;
 
@@ -63,8 +63,8 @@ class ScalableCalendar<T> extends StatefulWidget {
     this.weekDayFromIndex,
     this.weekDayBuilder,
     this.dateBuilder,
-    this.eventBuilder,
     this.eventWidgetBuilder,
+    this.eventChild,
     this.isInMonthView,
     this.defaultColor,
     this.selectedColor,
@@ -90,8 +90,8 @@ class ScalableCalendar<T> extends StatefulWidget {
     WeekDayFromIndex weekDayFromIndex,
     WeekDayBuilder weekDayBuilder,
     DateBuilder dateBuilder,
-    EventBuilder<T> eventBuilder,
-    EventWidgetBuilder<T> eventWidgetBuilder,
+    EventWidgetBuilder eventWidgetBuilder,
+    Widget eventChild,
     Color defaultColor,
     Color selectedColor,
     Color disabledColor,
@@ -125,8 +125,8 @@ class ScalableCalendar<T> extends StatefulWidget {
       weekDayFromIndex: weekDayFromIndex,
       weekDayBuilder: weekDayBuilder,
       dateBuilder: dateBuilder,
-      eventBuilder: eventBuilder,
       eventWidgetBuilder: eventWidgetBuilder,
+      eventChild: eventChild,
       defaultColor: defaultColor,
       selectedColor: selectedColor,
       disabledColor: disabledColor,
@@ -143,16 +143,16 @@ class ScalableCalendar<T> extends StatefulWidget {
           ? DateTime.now()
           : selectedDate.value;
   @override
-  _ScalableCalendarState<T> createState() => _ScalableCalendarState<T>();
+  _ScalableCalendarState createState() => _ScalableCalendarState();
 }
 
-mixin ScalableCalendarState<T> implements State<ScalableCalendar<T>> {
+mixin ScalableCalendarState implements State<ScalableCalendar> {
   bool get isInMonthView;
   bool get isVerticalScrolling;
 }
 
-class _ScalableCalendarState<T> extends State<ScalableCalendar<T>>
-    with ScalableCalendarState<T> {
+class _ScalableCalendarState extends State<ScalableCalendar>
+    with ScalableCalendarState {
   PageController _pageController =
       PageController(initialPage: START_PAGE, keepPage: false);
 
@@ -329,35 +329,27 @@ class _ScalableCalendarState<T> extends State<ScalableCalendar<T>>
           ),
         ),
       ],
-      body: Builder(builder: (context) {
-        return CustomScrollView(
-          slivers: <Widget>[
-            SliverOverlapInjector(
-              handle: NestedScrollView.sliverOverlapAbsorberHandleFor(context),
-            ),
-            ValueListenableBuilder<DateTime>(
-              valueListenable: widget.selectedDate,
-              builder: (context, value, child) {
-                final List<T> events = (widget.eventBuilder == null
-                        ? []
-                        : widget.eventBuilder(value)) ??
-                    [];
-                return SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (BuildContext context, int index) {
-                      if (widget.eventWidgetBuilder == null) {
-                        return Placeholder();
-                      }
-                      return widget.eventWidgetBuilder(context, events[index]);
-                    },
-                    childCount: events.length,
-                  ),
-                );
-              },
-            )
-          ],
-        );
-      }),
+      body: Builder(
+        builder: (context) {
+          return CustomScrollView(
+            slivers: <Widget>[
+              SliverOverlapInjector(
+                handle:
+                    NestedScrollView.sliverOverlapAbsorberHandleFor(context),
+              ),
+              SliverToBoxAdapter(
+                child: widget.eventWidgetBuilder == null
+                    ? widget.eventChild
+                    : widget.eventWidgetBuilder(
+                        context,
+                        widget.selectedDate,
+                        widget.eventChild,
+                      ),
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 
@@ -424,9 +416,7 @@ class _CalendarViewDelegate extends SliverPersistentHeaderDelegate {
   @override
   Widget build(
       BuildContext context, double shrinkOffset, bool overlapsContent) {
-    return SizedBox.expand(
-      child: childBuilder(context),
-    );
+    return childBuilder(context);
   }
 
   @override
